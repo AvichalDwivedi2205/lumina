@@ -7,7 +7,8 @@ from typing import Optional, Dict, Any
 # Import our custom modules
 from config import settings
 from auth import auth_manager, get_current_user, get_current_user_optional
-from routes import auth_router
+from routes.auth import auth_router
+from routes.journal import journal_router
 
 # Configure logging
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL))
@@ -32,27 +33,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include authentication routes
+# Include routers
 app.include_router(auth_router)
+app.include_router(journal_router)
 
 @app.get("/")
 async def root():
     """Root endpoint"""
     return {
-        "message": "Welcome to Lumina Agent with WorkOS AuthKit Authentication",
+        "message": "Welcome to Lumina - Mental Health AI Platform",
         "app_name": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "auth_methods": "All methods handled by AuthKit (Google OAuth, Email/Password, etc.)",
-        "endpoints": {
-            "login": "/auth/login",  # Single unified login endpoint!
-            "callback": "/auth/callback",
-            "profile": "/auth/profile",
-            "logout": "/auth/logout",
-            "status": "/auth/status",
-            "providers": "/auth/providers",
-            "config": "/auth/config"
+        "features": {
+            "authentication": "WorkOS AuthKit (Google OAuth, Email/Password, etc.)",
+            "journaling": "AI-powered therapeutic journaling with clinical insights",
+            "security": "AES-256 encryption for all sensitive data",
+            "analysis": "Evidence-based therapeutic analysis (CBT, DBT, ACT)"
         },
-        "note": "WorkOS AuthKit automatically handles all authentication providers in a single unified interface"
+        "endpoints": {
+            "auth": {
+                "login": "/auth/login",
+                "callback": "/auth/callback",
+                "profile": "/auth/profile",
+                "logout": "/auth/logout",
+                "status": "/auth/status"
+            },
+            "journal": {
+                "create_entry": "/journal/entry",
+                "get_history": "/journal/entries",
+                "insights_summary": "/journal/insights/summary",
+                "crisis_resources": "/journal/crisis/resources",
+                "health_check": "/journal/health"
+            }
+        }
     }
 
 @app.get("/health")
