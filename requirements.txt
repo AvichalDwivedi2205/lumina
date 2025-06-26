@@ -1,0 +1,45 @@
+# FastAPI and Web Framework
+fastapi
+uvicorn
+python-multipart
+python-dotenv
+
+# WorkOS Authentication
+workos
+
+# Supabase and Database
+supabase
+psycopg2-binary
+pgvector
+
+# AI and LLM
+google-generativeai
+langchain
+langchain-google-genai
+langgraph
+huggingface-hub
+
+# Embeddings and Vector Operations
+transformers
+torch
+numpy
+
+# Security and Encryption
+cryptography
+passlib[bcrypt]
+python-jose[cryptography]
+
+# HTTP and Requests
+httpx
+aiohttp
+
+# Data Processing
+pydantic
+pandas
+
+# Logging and Monitoring
+structlog
+
+# Development and Testing
+pytest
+pytest-asyncio
