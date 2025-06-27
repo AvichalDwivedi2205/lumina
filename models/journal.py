@@ -15,37 +15,44 @@ class JournalEntryRequest(BaseModel):
         return v.strip()
 
 class EmotionAnalysis(BaseModel):
-    """6-emotion analysis with intensity scoring"""
-    anxiety: int = Field(ge=0, le=10)
-    depression: int = Field(ge=0, le=10)
-    anger: int = Field(ge=0, le=10)
-    joy: int = Field(ge=0, le=10)
-    fear: int = Field(ge=0, le=10)
-    sadness: int = Field(ge=0, le=10)
+    """6-emotion analysis based on Ekman's basic emotions"""
+    joy: int = Field(ge=0, le=10, description="Happiness, contentment, satisfaction")
+    sadness: int = Field(ge=0, le=10, description="Grief, disappointment, melancholy")
+    anger: int = Field(ge=0, le=10, description="Frustration, irritation, rage")
+    fear: int = Field(ge=0, le=10, description="Anxiety, worry, panic")
+    disgust: int = Field(ge=0, le=10, description="Revulsion, contempt, aversion")
+    surprise: int = Field(ge=0, le=10, description="Shock, amazement, confusion")
 
 class EmotionalState(BaseModel):
     """Complete emotional state analysis"""
-    primary: str
-    secondary: List[str]
+    primary: str = Field(description="Primary emotion from the 6 core emotions")
+    secondary: List[str] = Field(description="Secondary emotions from the 6 core emotions")
     analysis: EmotionAnalysis
 
-class TherapeuticInsights(BaseModel):
-    """Multi-modal therapeutic insights"""
-    cbt: str = Field(description="Cognitive Behavioral Therapy insight")
-    dbt: str = Field(description="Dialectical Behavior Therapy insight")
-    act: str = Field(description="Acceptance and Commitment Therapy insight")
+class CrisisAssessment(BaseModel):
+    """Enhanced LLM-based crisis assessment"""
+    level: int = Field(ge=1, le=5, description="Crisis level: 1=No crisis, 5=Imminent danger")
+    indicators: List[str] = Field(description="Specific crisis indicators found")
+    reasoning: Optional[str] = Field(default="", description="Explanation of the assessment")
+    immediate_action_needed: bool = Field(description="Whether immediate intervention is needed")
+    recommended_resources: List[str] = Field(description="Appropriate resources for this level")
 
 class JournalAnalysisResponse(BaseModel):
-    """Complete journal analysis response"""
+    """Complete journal analysis response with enhanced features"""
     entry_id: str
     user_id: str
     timestamp: str
     normalized_journal: str
     emotions: EmotionalState
     patterns: List[str]
-    therapeutic_insights: TherapeuticInsights
-    crisis_detected: bool
+    therapeutic_insight: str = Field(description="Unified therapeutic insight integrating CBT, DBT, and ACT")
+    crisis_assessment: CrisisAssessment = Field(description="Enhanced crisis assessment")
     embedding_ready: bool
+
+    @property
+    def crisis_detected(self) -> bool:
+        """Backward compatibility: crisis detected if level >= 3"""
+        return self.crisis_assessment.level >= 3
 
 class JournalHistoryResponse(BaseModel):
     """Journal history with pagination"""
@@ -60,4 +67,11 @@ class CrisisResourcesResponse(BaseModel):
     """Crisis intervention resources"""
     immediate_help: Dict[str, Any]
     mental_health_resources: Dict[str, Any]
-    note: str 
+    note: str
+
+# Legacy support models (for backward compatibility)
+class TherapeuticInsights(BaseModel):
+    """Legacy multi-modal therapeutic insights - deprecated"""
+    cbt: str = Field(description="Cognitive Behavioral Therapy insight")
+    dbt: str = Field(description="Dialectical Behavior Therapy insight")
+    act: str = Field(description="Acceptance and Commitment Therapy insight") 

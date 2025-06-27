@@ -23,16 +23,16 @@ class JournalState(TypedDict):
     normalized_entry: Optional[str]
     emotions: Optional[Dict[str, Any]]
     patterns: Optional[List[str]]
-    therapeutic_insights: Optional[Dict[str, str]]
-    crisis_detected: Optional[bool]
+    therapeutic_insight: Optional[str]  # Single unified insight
+    crisis_assessment: Optional[Dict[str, Any]]  # Enhanced LLM-based crisis detection
     embedding_vector: Optional[List[float]]
     entry_id: Optional[str]
     error: Optional[str]
 
 class JournalingAgent:
     """
-    Advanced journaling agent using LangGraph workflow for therapeutic analysis.
-    Implements CBT, DBT, and ACT insights with crisis detection.
+    Enhanced journaling agent with LLM-based crisis detection, unified therapeutic insights,
+    and scientifically-grounded emotion framework.
     """
     
     def __init__(self):
@@ -45,19 +45,22 @@ class JournalingAgent:
         if not settings.GOOGLE_API_KEY:
             raise ValueError("GOOGLE_API_KEY required")
         genai.configure(api_key=settings.GOOGLE_API_KEY)
-        self.model = genai.GenerativeModel('gemini-2.5-pro')
+        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
         
-        # Crisis keywords for basic detection
-        self.crisis_keywords = [
-            'suicide', 'kill myself', 'end it all', 'want to die', 
-            'hurt myself', 'self harm', 'cut myself', 'overdose',
-            'no point living', 'better off dead', 'end my life'
-        ]
+        # Fixed 6-emotion framework (Ekman's basic emotions)
+        self.core_emotions = {
+            "joy": "Happiness, contentment, satisfaction, pleasure",
+            "sadness": "Grief, disappointment, melancholy, sorrow", 
+            "anger": "Frustration, irritation, rage, annoyance",
+            "fear": "Anxiety, worry, panic, nervousness",
+            "disgust": "Revulsion, contempt, aversion, distaste",
+            "surprise": "Shock, amazement, confusion, astonishment"
+        }
         
         # Build the workflow
         self.workflow = self._build_workflow()
         
-        logger.info("Journaling agent initialized with LangGraph workflow")
+        logger.info("Enhanced journaling agent initialized with LLM crisis detection")
     
     def _build_workflow(self) -> StateGraph:
         """Build the LangGraph workflow for journal processing"""
@@ -66,15 +69,15 @@ class JournalingAgent:
         # Add nodes
         workflow.add_node("normalize", self._normalize_entry)
         workflow.add_node("analyze", self._analyze_entry)
-        workflow.add_node("detect_crisis", self._detect_crisis)
+        workflow.add_node("assess_crisis", self._assess_crisis_llm)  # Enhanced LLM-based
         workflow.add_node("generate_embedding", self._generate_embedding)
         workflow.add_node("store_entry", self._store_entry)
         
         # Define the flow
         workflow.set_entry_point("normalize")
         workflow.add_edge("normalize", "analyze")
-        workflow.add_edge("analyze", "detect_crisis")
-        workflow.add_edge("detect_crisis", "generate_embedding")
+        workflow.add_edge("analyze", "assess_crisis")
+        workflow.add_edge("assess_crisis", "generate_embedding")
         workflow.add_edge("generate_embedding", "store_entry")
         workflow.add_edge("store_entry", END)
         
@@ -120,39 +123,45 @@ class JournalingAgent:
         return state
     
     async def _analyze_entry(self, state: JournalState) -> JournalState:
-        """Perform multi-modal therapeutic analysis"""
+        """Perform unified therapeutic analysis with fixed emotion framework"""
         try:
+            # Create emotion descriptions for the prompt
+            emotion_descriptions = "\n".join([f"- {emotion}: {desc}" for emotion, desc in self.core_emotions.items()])
+            
             analysis_prompt = f"""
-            You are a licensed mental health professional. Analyze this journal entry and provide structured therapeutic insights using CBT, DBT, and ACT approaches.
+            You are a licensed mental health professional. Analyze this journal entry and provide structured therapeutic insights.
+
+            CORE EMOTIONS FRAMEWORK (rate 0-10 for each):
+            {emotion_descriptions}
 
             Journal Entry: "{state['normalized_entry']}"
 
             Provide analysis in this EXACT JSON format:
             {{
                 "emotions": {{
-                    "primary": "specific primary emotion",
-                    "secondary": ["emotion1", "emotion2"],
+                    "primary": "one of the 6 core emotions above",
+                    "secondary": ["additional emotions from the 6 core emotions"],
                     "analysis": {{
-                        "anxiety": 0-10,
-                        "depression": 0-10,
-                        "anger": 0-10,
                         "joy": 0-10,
+                        "sadness": 0-10,
+                        "anger": 0-10,
                         "fear": 0-10,
-                        "sadness": 0-10
+                        "disgust": 0-10,
+                        "surprise": 0-10
                     }}
                 }},
                 "patterns": [
                     "specific cognitive or behavioral pattern 1",
                     "specific cognitive or behavioral pattern 2"
                 ],
-                "therapeutic_insights": {{
-                    "cbt": "Specific CBT insight with actionable technique - focus on thought challenging or behavioral activation",
-                    "dbt": "Specific DBT insight with skill recommendation - focus on distress tolerance, emotion regulation, interpersonal effectiveness, or mindfulness",
-                    "act": "Specific ACT insight with values-based guidance - focus on psychological flexibility, acceptance, or committed action"
-                }}
+                "therapeutic_insight": "A single, unified therapeutic insight that integrates the best of CBT (thought challenging), DBT (emotion regulation), and ACT (values-based action) approaches. Make it specific, actionable, and easy to understand. Start with acknowledging their experience, then provide one clear technique or strategy they can use today."
             }}
 
-            CRITICAL: Respond ONLY with valid JSON. Make insights specific and actionable.
+            CRITICAL: 
+            - Use ONLY the 6 core emotions listed above
+            - Provide ONE unified therapeutic insight, not separate CBT/DBT/ACT insights
+            - Make the insight practical and immediately actionable
+            - Respond ONLY with valid JSON
             """
             
             response = await self.model.generate_content_async(analysis_prompt)
@@ -166,7 +175,7 @@ class JournalingAgent:
             
             state['emotions'] = analysis_data['emotions']
             state['patterns'] = analysis_data['patterns']
-            state['therapeutic_insights'] = analysis_data['therapeutic_insights']
+            state['therapeutic_insight'] = analysis_data['therapeutic_insight']
             
             logger.info(f"Analysis completed for user {state['user_id']}")
             
@@ -179,23 +188,95 @@ class JournalingAgent:
         
         return state
     
-    async def _detect_crisis(self, state: JournalState) -> JournalState:
-        """Basic crisis detection using keyword matching"""
+    async def _assess_crisis_llm(self, state: JournalState) -> JournalState:
+        """Enhanced LLM-based crisis assessment"""
         try:
-            text_to_check = f"{state['raw_entry']} {state['normalized_entry']}".lower()
+            crisis_prompt = f"""
+            You are a crisis intervention specialist. Assess this journal entry for crisis indicators.
+
+            CRISIS LEVELS:
+            1 = No crisis indicators - normal emotional expression
+            2 = Mild distress - monitoring recommended, no immediate action needed
+            3 = Moderate concern - check-in recommended within 24-48 hours
+            4 = High risk - immediate intervention needed, contact crisis services
+            5 = Imminent danger - emergency response required immediately
+
+            LOOK FOR:
+            - Suicidal ideation (thoughts of death, wanting to die)
+            - Self-harm indicators (cutting, burning, other self-injury)
+            - Hopelessness and helplessness
+            - Social withdrawal and isolation
+            - Substance abuse escalation
+            - Psychotic symptoms
+            - Plans, means, or timeline for self-harm
+            - Giving away possessions or saying goodbye
+
+            Journal Entry: "{state['normalized_entry']}"
+
+            Provide assessment in this EXACT JSON format:
+            {{
+                "level": 1-5,
+                "indicators": ["list of specific crisis indicators found, or empty list if none"],
+                "reasoning": "Brief explanation of the assessment",
+                "immediate_action_needed": true/false,
+                "recommended_resources": ["list of appropriate resources based on level"]
+            }}
+
+            CRITICAL: Respond ONLY with valid JSON. Be thorough but not overly cautious.
+            """
             
-            crisis_detected = any(keyword in text_to_check for keyword in self.crisis_keywords)
-            state['crisis_detected'] = crisis_detected
+            response = await self.model.generate_content_async(crisis_prompt)
+            crisis_text = response.text.strip()
             
-            if crisis_detected:
-                logger.warning(f"Crisis indicators detected for user {state['user_id']}")
-                # TODO: Implement crisis intervention protocols
+            # Clean JSON response
+            if crisis_text.startswith('```json'):
+                crisis_text = crisis_text.replace('```json', '').replace('```', '').strip()
             
+            crisis_data = json.loads(crisis_text)
+            
+            state['crisis_assessment'] = crisis_data
+            
+            # Log crisis situations
+            if crisis_data['level'] >= 3:
+                logger.warning(f"Crisis level {crisis_data['level']} detected for user {state['user_id']}: {crisis_data['reasoning']}")
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in crisis assessment: {e}")
+            # Fallback to basic keyword detection
+            state['crisis_assessment'] = self._fallback_crisis_detection(state)
         except Exception as e:
-            logger.error(f"Crisis detection failed: {e}")
-            state['crisis_detected'] = False
+            logger.error(f"Crisis assessment failed: {e}")
+            state['crisis_assessment'] = self._fallback_crisis_detection(state)
         
         return state
+    
+    def _fallback_crisis_detection(self, state: JournalState) -> Dict[str, Any]:
+        """Fallback keyword-based crisis detection"""
+        crisis_keywords = [
+            'suicide', 'kill myself', 'end it all', 'want to die', 
+            'hurt myself', 'self harm', 'cut myself', 'overdose',
+            'no point living', 'better off dead', 'end my life'
+        ]
+        
+        text_to_check = f"{state['raw_entry']} {state['normalized_entry']}".lower()
+        crisis_detected = any(keyword in text_to_check for keyword in crisis_keywords)
+        
+        if crisis_detected:
+            return {
+                "level": 4,
+                "indicators": ["Crisis keywords detected"],
+                "reasoning": "Keyword-based detection triggered",
+                "immediate_action_needed": True,
+                "recommended_resources": ["988 Suicide & Crisis Lifeline", "Crisis Text Line", "Emergency Services"]
+            }
+        else:
+            return {
+                "level": 1,
+                "indicators": [],
+                "reasoning": "No crisis indicators detected",
+                "immediate_action_needed": False,
+                "recommended_resources": []
+            }
     
     async def _generate_embedding(self, state: JournalState) -> JournalState:
         """Generate embedding using Hugging Face API"""
@@ -241,7 +322,7 @@ class JournalingAgent:
             # Encrypt sensitive data
             encrypted_raw = self.fernet.encrypt(state['raw_entry'].encode()).decode()
             encrypted_normalized = self.fernet.encrypt(state['normalized_entry'].encode()).decode()
-            encrypted_insights = self.fernet.encrypt(json.dumps(state['therapeutic_insights']).encode()).decode()
+            encrypted_insight = self.fernet.encrypt(state['therapeutic_insight'].encode()).decode()
             
             # Prepare data for storage
             entry_data = {
@@ -250,14 +331,16 @@ class JournalingAgent:
                 "timestamp": datetime.utcnow().isoformat(),
                 "encrypted_raw_text": encrypted_raw,
                 "encrypted_normalized_text": encrypted_normalized,
-                "encrypted_insights": encrypted_insights,
+                "encrypted_insights": encrypted_insight,  # Single insight now
                 "emotions": state['emotions'],
                 "patterns": state['patterns'],
-                "crisis_detected": state['crisis_detected'],
+                "crisis_detected": state['crisis_assessment']['level'] >= 3,  # Level 3+ is crisis
                 "embedding_vector": state['embedding_vector'],
                 "metadata": {
-                    "agent_version": "1.0.0",
-                    "processing_timestamp": datetime.utcnow().isoformat()
+                    "agent_version": "2.0.0",  # Updated version
+                    "processing_timestamp": datetime.utcnow().isoformat(),
+                    "crisis_level": state['crisis_assessment']['level'],
+                    "emotion_framework": "ekman_6_emotions"
                 }
             }
             
@@ -273,14 +356,14 @@ class JournalingAgent:
     
     async def process_journal_entry(self, raw_entry: str, user_id: str) -> Dict[str, Any]:
         """
-        Process a journal entry through the complete workflow
+        Process a journal entry through the complete enhanced workflow
         
         Args:
             raw_entry: Raw journal text
             user_id: User ID
             
         Returns:
-            Processing results
+            Processing results with enhanced crisis assessment and unified insights
         """
         try:
             # Initialize state
@@ -290,8 +373,8 @@ class JournalingAgent:
                 "normalized_entry": None,
                 "emotions": None,
                 "patterns": None,
-                "therapeutic_insights": None,
-                "crisis_detected": None,
+                "therapeutic_insight": None,
+                "crisis_assessment": None,
                 "embedding_vector": None,
                 "entry_id": None,
                 "error": None
@@ -311,8 +394,8 @@ class JournalingAgent:
                 "normalized_journal": final_state['normalized_entry'],
                 "emotions": final_state['emotions'],
                 "patterns": final_state['patterns'],
-                "therapeutic_insights": final_state['therapeutic_insights'],
-                "crisis_detected": final_state['crisis_detected'],
+                "therapeutic_insight": final_state['therapeutic_insight'],  # Single unified insight
+                "crisis_assessment": final_state['crisis_assessment'],  # Enhanced crisis data
                 "embedding_ready": final_state['embedding_vector'] is not None
             }
             
@@ -321,4 +404,4 @@ class JournalingAgent:
             raise ValueError(f"Processing failed: {str(e)}")
 
 # Global agent instance
-journaling_agent = JournalingAgent() 
+journaling_agent = JournalingAgent()

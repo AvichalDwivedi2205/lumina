@@ -28,3 +28,10 @@ DATABASE_URL=""
 
 LOG_LEVEL="INFO"
 /localhost:8000"
+
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+ELEVENLABS_VOICE_ID=your_preferred_voice_id_here
+
+# Video AI (Tavus)
+TAVUS_API_KEY=your_tavus_api_key_here
+TAVUS_PERSONA_ID=your_preferred_avatar_id_here

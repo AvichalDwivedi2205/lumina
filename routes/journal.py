@@ -4,7 +4,7 @@ import logging
 
 from auth import get_current_user
 from config import settings
-from agents.journaling_agent import journaling_agent
+from agents.journaling_agent import journaling_agent  # Enhanced agent with LLM crisis detection
 from database.supabase_client import supabase_client
 from models.journal import (
     JournalEntryRequest, 
@@ -12,7 +12,7 @@ from models.journal import (
     JournalHistoryResponse,
     EmotionalState,
     EmotionAnalysis,
-    TherapeuticInsights,
+    CrisisAssessment,
     CrisisResourcesResponse
 )
 
@@ -27,33 +27,35 @@ async def create_journal_entry(
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
-    Process and store a new journal entry with therapeutic analysis.
+    Process and store a new journal entry with enhanced therapeutic analysis.
     
-    This endpoint:
+    This endpoint now features:
     1. Normalizes the raw journal entry
-    2. Performs multi-modal therapeutic analysis (CBT, DBT, ACT)
-    3. Detects crisis indicators
-    4. Generates embeddings for future analysis
-    5. Encrypts and stores data securely
-    6. Returns structured therapeutic insights
+    2. Performs unified therapeutic analysis integrating CBT, DBT, and ACT
+    3. Enhanced LLM-based crisis assessment with severity levels
+    4. Fixed 6-emotion framework based on Ekman's research
+    5. Generates embeddings for future analysis
+    6. Encrypts and stores data securely
+    7. Returns structured therapeutic insights
     """
     try:
         user_id = current_user["id"]
         
-        # Process the journal entry through our LangGraph workflow
+        # Process the journal entry through our enhanced LangGraph workflow
         logger.info(f"Processing journal entry for user {user_id}")
         processed_data = await journaling_agent.process_journal_entry(
             raw_entry=entry_request.entry_text,
             user_id=user_id
         )
         
-        # Handle crisis situations
-        if processed_data["crisis_detected"]:
-            logger.warning(f"Crisis indicators detected for user {user_id}")
-            # TODO: Implement crisis intervention protocols
-            # - Send alert to crisis response team
-            # - Provide immediate resources
-            # - Flag for priority follow-up
+        # Handle crisis situations with enhanced assessment
+        crisis_level = processed_data["crisis_assessment"]["level"]
+        if crisis_level >= 3:
+            logger.warning(f"Crisis level {crisis_level} detected for user {user_id}: {processed_data['crisis_assessment']['reasoning']}")
+            # TODO: Implement tiered crisis intervention protocols
+            # Level 3: Check-in within 24-48 hours
+            # Level 4: Immediate intervention needed
+            # Level 5: Emergency response required
         
         # Convert to response model
         response = JournalAnalysisResponse(
@@ -67,12 +69,12 @@ async def create_journal_entry(
                 analysis=EmotionAnalysis(**processed_data["emotions"]["analysis"])
             ),
             patterns=processed_data["patterns"],
-            therapeutic_insights=TherapeuticInsights(**processed_data["therapeutic_insights"]),
-            crisis_detected=processed_data["crisis_detected"],
+            therapeutic_insight=processed_data["therapeutic_insight"],
+            crisis_assessment=CrisisAssessment(**processed_data["crisis_assessment"]),
             embedding_ready=processed_data["embedding_ready"]
         )
         
-        logger.info(f"Journal entry processed successfully: {processed_data['entry_id']}")
+        logger.info(f"Journal entry processed successfully: {processed_data['entry_id']} (Crisis Level: {crisis_level})")
         return response
         
     except ValueError as e:
@@ -106,6 +108,27 @@ async def get_journal_history(
         # Convert to response models
         entries = []
         for entry in history_data["entries"]:
+            # Handle both old and new data formats for backward compatibility
+            if "therapeutic_insights" in entry and isinstance(entry["therapeutic_insights"], dict):
+                # Old format - convert to unified insight
+                therapeutic_insight = f"Based on your experience: {entry['therapeutic_insights'].get('cbt', '')} {entry['therapeutic_insights'].get('dbt', '')} {entry['therapeutic_insights'].get('act', '')}"
+            else:
+                # New format - use unified insight
+                therapeutic_insight = entry.get("therapeutic_insight", "Analysis not available")
+            
+            # Handle crisis assessment format
+            if "crisis_assessment" in entry and isinstance(entry["crisis_assessment"], dict):
+                crisis_assessment = CrisisAssessment(**entry["crisis_assessment"])
+            else:
+                # Fallback for old format
+                crisis_assessment = CrisisAssessment(
+                    level=4 if entry.get("crisis_detected", False) else 1,
+                    indicators=["Legacy detection"] if entry.get("crisis_detected", False) else [],
+                    reasoning="Legacy crisis detection",
+                    immediate_action_needed=entry.get("crisis_detected", False),
+                    recommended_resources=[]
+                )
+            
             analysis_response = JournalAnalysisResponse(
                 entry_id=entry["entry_id"],
                 user_id=entry["user_id"],
@@ -117,8 +140,8 @@ async def get_journal_history(
                     analysis=EmotionAnalysis(**entry["emotions"]["analysis"])
                 ),
                 patterns=entry["patterns"],
-                therapeutic_insights=TherapeuticInsights(**entry["therapeutic_insights"]),
-                crisis_detected=entry["crisis_detected"],
+                therapeutic_insight=therapeutic_insight,
+                crisis_assessment=crisis_assessment,
                 embedding_ready=True  # Assume processed entries have embeddings
             )
             entries.append(analysis_response)
@@ -146,24 +169,31 @@ async def get_insights_summary(
 ):
     """
     Generate therapeutic insights summary over specified time period.
-    Provides pattern analysis and progress tracking.
+    Provides pattern analysis and progress tracking with enhanced emotion framework.
     """
     try:
         user_id = current_user["id"]
         
         # TODO: Implement comprehensive analysis across multiple entries
         # This would include:
-        # - Emotional trend analysis over time
+        # - Emotional trend analysis using the 6-emotion framework
         # - Cognitive pattern frequency analysis
-        # - Progress marker tracking
-        # - Therapeutic recommendation updates
-        # - Crisis incident tracking
+        # - Progress marker tracking with crisis level trends
+        # - Unified therapeutic recommendation updates
+        # - Crisis incident tracking with severity patterns
         
         return {
-            "message": "Insights summary endpoint - implementation pending",
+            "message": "Enhanced insights summary endpoint - implementation pending",
             "user_id": user_id,
             "analysis_period_days": days,
-            "note": "This will provide longitudinal analysis of journal entries"
+            "emotion_framework": "ekman_6_emotions",
+            "features": [
+                "Unified therapeutic insights",
+                "Enhanced crisis assessment",
+                "6-emotion trend analysis",
+                "Pattern frequency tracking"
+            ],
+            "note": "This will provide longitudinal analysis with improved clinical accuracy"
         }
         
     except Exception as e:
