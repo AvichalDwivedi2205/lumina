@@ -75,9 +75,11 @@ ELEVENLABS_FRIEND_FUNNY_AGENT_ID=agent_id_for_riley
 ELEVENLABS_FRIEND_UNHINGED_AGENT_ID=agent_id_for_sage
 ```
 
-#### **Video Generation**
+#### **Video Generation (Tavus)**
 ```
 TAVUS_API_KEY=your_tavus_api_key
+TAVUS_MALE_THERAPIST_PERSONA_ID=your_male_therapist_persona_id
+TAVUS_FEMALE_THERAPIST_PERSONA_ID=your_female_therapist_persona_id
 ```
 
 ### 3. **Update WorkOS Redirect URI**

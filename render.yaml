@@ -48,4 +48,8 @@ services:
         sync: false
       - key: TAVUS_API_KEY
         sync: false
+      - key: TAVUS_MALE_THERAPIST_PERSONA_ID
+        sync: false
+      - key: TAVUS_FEMALE_THERAPIST_PERSONA_ID
+        sync: false
     healthCheckPath: /health 
