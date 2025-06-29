@@ -39,6 +39,7 @@ class SchedulingState(TypedDict):
     optimization_result: Optional[Dict[str, Any]]
     recommendations: Optional[List[Dict[str, Any]]]
     conflict_analysis: Optional[Dict[str, Any]]
+    final_response: Optional[Dict[str, Any]]
     error: Optional[str]
 
 class SchedulingAgent:
@@ -245,6 +246,10 @@ class SchedulingAgent:
                 "is_active": True
             }
             
+            # Convert datetime objects to strings for JSON serialization
+            if isinstance(new_schedule_item.get('start_time'), datetime):
+                new_schedule_item['start_time'] = new_schedule_item['start_time'].isoformat()
+            
             # Add to current schedule for optimization
             current_schedule = state.get('current_schedule', [])
             current_schedule.append(new_schedule_item)
@@ -322,22 +327,34 @@ class SchedulingAgent:
             current_schedule = state.get('current_schedule', [])
             optimization_result = state.get('optimization_result', {})
             
+            # Ensure we have valid data
+            if not current_schedule:
+                state['final_conflicts'] = []
+                logger.info("No schedule items to check for conflicts")
+                return state
+            
             # Apply optimizations if available
-            if optimization_result.get('optimized_schedule'):
+            if optimization_result and optimization_result.get('optimized_schedule'):
                 optimized_items = optimization_result['optimized_schedule']
                 
                 # Update schedule items with optimized times
                 for item in current_schedule:
+                    if not item or not item.get('id'):
+                        continue
                     for opt_item in optimized_items:
-                        if item['id'] == opt_item['id']:
-                            item['start_time'] = opt_item['suggested_start_time']
+                        if opt_item and opt_item.get('id') == item['id']:
+                            item['start_time'] = opt_item.get('suggested_start_time', item.get('start_time'))
                             item['optimization_applied'] = True
                             break
             
             # Final conflict check
             conflicts = []
             for i, item1 in enumerate(current_schedule):
+                if not item1 or not item1.get('id'):
+                    continue
                 for item2 in current_schedule[i+1:]:
+                    if not item2 or not item2.get('id'):
+                        continue
                     if self._check_time_overlap(item1, item2):
                         conflicts.append({
                             "type": "time_overlap",
@@ -547,11 +564,17 @@ class SchedulingAgent:
             optimization_result=None,
             recommendations=None,
             conflict_analysis=None,
+            final_response=None,
             error=None
         )
         
         result = await self.workflow.ainvoke(state)
-        return result.get('final_response', {"success": False, "error": result.get('error', 'Unknown error')})
+        if result and 'final_response' in result:
+            return result['final_response']
+        elif result and 'error' in result:
+            return {"success": False, "error": result['error']}
+        else:
+            return {"success": False, "error": "Workflow returned no result"}
 
     async def optimize_user_schedule(self, user_id: str) -> Dict[str, Any]:
         """Optimize user's entire schedule"""
@@ -565,11 +588,17 @@ class SchedulingAgent:
             optimization_result=None,
             recommendations=None,
             conflict_analysis=None,
+            final_response=None,
             error=None
         )
         
         result = await self.workflow.ainvoke(state)
-        return result.get('final_response', {"success": False, "error": result.get('error', 'Unknown error')})
+        if result and 'final_response' in result:
+            return result['final_response']
+        elif result and 'error' in result:
+            return {"success": False, "error": result['error']}
+        else:
+            return {"success": False, "error": "Workflow returned no result"}
 
     async def get_schedule_recommendations(self, user_id: str) -> Dict[str, Any]:
         """Get personalized scheduling recommendations"""
@@ -583,11 +612,17 @@ class SchedulingAgent:
             optimization_result=None,
             recommendations=None,
             conflict_analysis=None,
+            final_response=None,
             error=None
         )
         
         result = await self.workflow.ainvoke(state)
-        return result.get('final_response', {"success": False, "error": result.get('error', 'Unknown error')})
+        if result and 'final_response' in result:
+            return result['final_response']
+        elif result and 'error' in result:
+            return {"success": False, "error": result['error']}
+        else:
+            return {"success": False, "error": "Workflow returned no result"}
 
     async def analyze_schedule(self, user_id: str) -> Dict[str, Any]:
         """Analyze user's current schedule"""
@@ -601,11 +636,17 @@ class SchedulingAgent:
             optimization_result=None,
             recommendations=None,
             conflict_analysis=None,
+            final_response=None,
             error=None
         )
         
         result = await self.workflow.ainvoke(state)
-        return result.get('final_response', {"success": False, "error": result.get('error', 'Unknown error')})
+        if result and 'final_response' in result:
+            return result['final_response']
+        elif result and 'error' in result:
+            return {"success": False, "error": result['error']}
+        else:
+            return {"success": False, "error": "Workflow returned no result"}
 
     # Additional methods for API endpoints
     async def get_user_preferences(self, user_id: str) -> Dict[str, Any]:

@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: lumina-api
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: ENVIRONMENT
+        value: production
+      - key: WORKOS_API_KEY
+        sync: false
+      - key: WORKOS_CLIENT_ID
+        sync: false
+      - key: WORKOS_REDIRECT_URI
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: FERNET_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: USDA_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_THERAPY_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_EXERCISE_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_FRIEND_API_KEY
+        sync: false
+      - key: ELEVENLABS_FRIEND_SUPPORTIVE_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_FRIEND_MOTIVATOR_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_FRIEND_MENTOR_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_FRIEND_FUNNY_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_FRIEND_UNHINGED_AGENT_ID
+        sync: false
+      - key: TAVUS_API_KEY
+        sync: false
+    healthCheckPath: /health 

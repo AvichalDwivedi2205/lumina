@@ -26,6 +26,7 @@ class FriendState(TypedDict):
     agent_url: Optional[str]
     selected_personality: Optional[Dict[str, Any]]
     system_prompt: Optional[str]
+    final_response: Optional[Dict[str, Any]]
     error: Optional[str]
 
 class AIFriendAgent:
@@ -209,7 +210,7 @@ class AIFriendAgent:
             - If the user seems in crisis, gently suggest professional help
             - Adapt your energy to match what the user needs right now
             
-            Remember: You're not just an AI, you're {personality_config['name']}, their {personality_type} friend who truly cares about their wellbeing.
+            Remember: You're not just an AI, you're {personality_config['name']}, their {state['personality_type']} friend who truly cares about their wellbeing.
             """
             
             state['system_prompt'] = system_prompt
@@ -300,11 +301,17 @@ class AIFriendAgent:
             agent_url=None,
             selected_personality=None,
             system_prompt=None,
+            final_response=None,
             error=None
         )
         
         result = await self.workflow.ainvoke(state)
-        return result.get('final_response', {"success": False, "error": result.get('error', 'Unknown error')})
+        if result and 'final_response' in result:
+            return result['final_response']
+        elif result and 'error' in result:
+            return {"success": False, "error": result['error']}
+        else:
+            return {"success": False, "error": "Workflow returned no result"}
 
     def get_available_personalities(self) -> Dict[str, Any]:
         """Get list of available AI friend personalities"""

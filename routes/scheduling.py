@@ -387,7 +387,7 @@ async def apply_schedule_template(
 
 # Analytics
 @scheduling_router.get("/analytics")
-async def get_scheduling_analytics(
+async def get_schedule_analytics(
     period: str = "week",  # week, month, year
     user=Depends(get_current_user)
 ) -> Dict[str, Any]:
@@ -396,7 +396,7 @@ async def get_scheduling_analytics(
     Requires WorkOS authentication.
     """
     try:
-        result = await scheduling_agent.get_scheduling_analytics(
+        result = await scheduling_agent.get_schedule_analytics(
             user_id=user["id"],
             period=period
         )

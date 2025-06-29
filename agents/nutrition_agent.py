@@ -30,6 +30,7 @@ class NutritionState(TypedDict):
     consultation_query: Optional[str]
     calorie_tracking: Optional[Dict[str, Any]]
     user_profile: Optional[Dict[str, Any]]
+    final_response: Optional[Dict[str, Any]]
     error: Optional[str]
 
 class NutritionAgent:
@@ -657,11 +658,17 @@ class NutritionAgent:
             meal_plan=None,
             consultation_response=None,
             calorie_tracking=None,
+            final_response=None,
             error=None
         )
         
         result = await self.workflow.ainvoke(state)
-        return result.get('final_response', {"success": False, "error": result.get('error', 'Unknown error')})
+        if result and 'final_response' in result:
+            return result['final_response']
+        elif result and 'error' in result:
+            return {"success": False, "error": result['error']}
+        else:
+            return {"success": False, "error": "Workflow returned no result"}
 
     async def log_food_manually(self, user_id: str, food_data: Dict) -> Dict[str, Any]:
         """Log food entry manually without image"""
@@ -674,11 +681,17 @@ class NutritionAgent:
             meal_plan=None,
             consultation_response=None,
             calorie_tracking=None,
+            final_response=None,
             error=None
         )
         
         result = await self.workflow.ainvoke(state)
-        return result.get('final_response', {"success": False, "error": result.get('error', 'Unknown error')})
+        if result and 'final_response' in result:
+            return result['final_response']
+        elif result and 'error' in result:
+            return {"success": False, "error": result['error']}
+        else:
+            return {"success": False, "error": "Workflow returned no result"}
 
     async def generate_meal_plan(self, user_id: str) -> Dict[str, Any]:
         """Generate weekly meal plan"""
@@ -691,11 +704,17 @@ class NutritionAgent:
             meal_plan=None,
             consultation_response=None,
             calorie_tracking=None,
+            final_response=None,
             error=None
         )
         
         result = await self.workflow.ainvoke(state)
-        return result.get('final_response', {"success": False, "error": result.get('error', 'Unknown error')})
+        if result and 'final_response' in result:
+            return result['final_response']
+        elif result and 'error' in result:
+            return {"success": False, "error": result['error']}
+        else:
+            return {"success": False, "error": "Workflow returned no result"}
 
     async def provide_consultation(self, user_id: str, query: str) -> Dict[str, Any]:
         """Provide nutrition consultation"""
@@ -709,11 +728,17 @@ class NutritionAgent:
             meal_plan=None,
             consultation_response=None,
             calorie_tracking=None,
+            final_response=None,
             error=None
         )
         
         result = await self.workflow.ainvoke(state)
-        return result.get('final_response', {"success": False, "error": result.get('error', 'Unknown error')})
+        if result and 'final_response' in result:
+            return result['final_response']
+        elif result and 'error' in result:
+            return {"success": False, "error": result['error']}
+        else:
+            return {"success": False, "error": "Workflow returned no result"}
 
     async def get_calorie_tracking(self, user_id: str) -> Dict[str, Any]:
         """Get daily calorie tracking"""
@@ -726,11 +751,17 @@ class NutritionAgent:
             meal_plan=None,
             consultation_response=None,
             calorie_tracking=None,
+            final_response=None,
             error=None
         )
         
         result = await self.workflow.ainvoke(state)
-        return result.get('final_response', {"success": False, "error": result.get('error', 'Unknown error')})
+        if result and 'final_response' in result:
+            return result['final_response']
+        elif result and 'error' in result:
+            return {"success": False, "error": result['error']}
+        else:
+            return {"success": False, "error": "Workflow returned no result"}
 
     # Additional methods for API endpoints
     async def get_user_profile(self, user_id: str) -> Dict[str, Any]:
