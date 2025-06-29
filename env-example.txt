@@ -1,4 +1,6 @@
-
+# ============================================================================
+# APPLICATION SETTINGS
+# ============================================================================
 APP_NAME="Lumina Agent"
 APP_VERSION="1.0.0"
 DEBUG=false
@@ -6,17 +8,57 @@ DEBUG=false
 HOST="0.0.0.0"
 PORT=8000
 
+# ============================================================================
+# AUTHENTICATION & SECURITY
+# ============================================================================
 WORKOS_API_KEY=sk_test_example
 WORKOS_CLIENT_ID=client_xxxxxx
 WORKOS_REDIRECT_URI="http://localhost:8000/auth/callback"
 
+# ============================================================================
+# DATABASE & STORAGE
+# ============================================================================
 SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=supabase_anon_key
 SUPABASE_SERVICE_KEY=supabase_service_key
 
+# ============================================================================
+# AI & LANGUAGE MODELS
+# ============================================================================
 GOOGLE_API_KEY=google_api_key
 HF_API_KEY=hg_api_key
+
+# ============================================================================
+# ENCRYPTION & SECURITY
+# ============================================================================
 FERNET_KEY=fernet_key
+
+# ============================================================================
+# ELEVENLABS CONVERSATIONAL AI (Separate Accounts)
+# ============================================================================
+ELEVENLABS_THERAPY_API_KEY=your_therapy_account_api_key
+ELEVENLABS_EXERCISE_API_KEY=your_exercise_account_api_key
+ELEVENLABS_MALE_THERAPIST_AGENT_ID=agent_id_male_therapist
+ELEVENLABS_FEMALE_THERAPIST_AGENT_ID=agent_id_female_therapist
+ELEVENLABS_MINDFULNESS_AGENT_ID=agent_id_mindfulness
+ELEVENLABS_CBT_AGENT_ID=agent_id_cbt
+ELEVENLABS_BEHAVIORAL_AGENT_ID=agent_id_behavioral
+ELEVENLABS_COMPASSION_AGENT_ID=agent_id_compassion
+
+# ============================================================================
+# TAVUS VIDEO AI
+# ============================================================================
+TAVUS_API_KEY=your_tavus_api_key
+TAVUS_MALE_THERAPIST_PERSONA_ID=persona_id_male_therapist
+TAVUS_FEMALE_THERAPIST_PERSONA_ID=persona_id_female_therapist
+
+# ============================================================================
+# THERAPY CONFIGURATION
+# ============================================================================
+THERAPY_SESSION_DURATION=2700  # 45 minutes in seconds
+EXERCISE_SESSION_DURATION=600   # 10 minutes in seconds
+CRISIS_DETECTION_ENABLED=true
+BACKGROUND_AUDIO_ENABLED=true
 
 # ============================================================================
 # LANGCHAIN/LANGGRAPH (Optional)
@@ -26,12 +68,33 @@ LANGCHAIN_TRACING_V2=false
 LANGCHAIN_API_KEY=""
 DATABASE_URL=""
 
+# ============================================================================
+# LOGGING
+# ============================================================================
 LOG_LEVEL="INFO"
-/localhost:8000"
 
-ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
-ELEVENLABS_VOICE_ID=your_preferred_voice_id_here
+# ===============================
+# AI FRIEND AGENTS (SEPARATE ACCOUNT)
+# ===============================
+ELEVENLABS_FRIEND_API_KEY=your_friend_account_api_key
+ELEVENLABS_FRIEND_SUPPORTIVE_AGENT_ID=agent_id_emma
+ELEVENLABS_FRIEND_MOTIVATOR_AGENT_ID=agent_id_alex
+ELEVENLABS_FRIEND_MENTOR_AGENT_ID=agent_id_morgan
+ELEVENLABS_FRIEND_FUNNY_AGENT_ID=agent_id_riley
+ELEVENLABS_FRIEND_UNHINGED_AGENT_ID=agent_id_sage
 
-# Video AI (Tavus)
-TAVUS_API_KEY=your_tavus_api_key_here
-TAVUS_PERSONA_ID=your_preferred_avatar_id_here
+# ===============================
+# NUTRITION APIS
+# ===============================
+USDA_API_KEY=your_usda_food_database_key
+
+# ===============================
+# UPDATED SESSION DURATIONS
+# ===============================
+THERAPY_SESSION_DURATION=2700  # 45 minutes
+EXERCISE_SESSION_DURATION=600   # 10 minutes
+
+# ===============================
+# FEATURE FLAGS
+# ===============================
+CRISIS_DETECTION_ENABLED=true

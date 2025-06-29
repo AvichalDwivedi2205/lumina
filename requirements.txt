@@ -43,3 +43,17 @@ structlog
 # Development and Testing
 pytest
 pytest-asyncio
+
+# Additional dependencies for therapy and mental exercise agents
+elevenlabs  # ElevenLabs Conversational AI SDK
+websockets  # For real-time communication with agents
+python-json-logger  # Enhanced JSON logging for therapy sessions
+
+# Image processing for nutrition agent
+Pillow==10.1.0
+
+# LangGraph for workflow orchestration (if not already present)
+langgraph==0.0.69
+
+# Additional dependencies for nutrition agent
+httpx==0.25.2  # For USDA API calls

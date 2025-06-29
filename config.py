@@ -32,6 +32,42 @@ class Settings:
     GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
     HF_API_KEY: str = os.getenv("HF_API_KEY", "")
     
+    # ElevenLabs Configuration (Separate accounts)
+    ELEVENLABS_THERAPY_API_KEY: str = os.getenv("ELEVENLABS_THERAPY_API_KEY", "")  # For therapy agents
+    ELEVENLABS_EXERCISE_API_KEY: str = os.getenv("ELEVENLABS_EXERCISE_API_KEY", "")  # For exercise agents
+    ELEVENLABS_MALE_THERAPIST_AGENT_ID: str = os.getenv("ELEVENLABS_MALE_THERAPIST_AGENT_ID", "")
+    ELEVENLABS_FEMALE_THERAPIST_AGENT_ID: str = os.getenv("ELEVENLABS_FEMALE_THERAPIST_AGENT_ID", "")
+    ELEVENLABS_MINDFULNESS_AGENT_ID: str = os.getenv("ELEVENLABS_MINDFULNESS_AGENT_ID", "")
+    ELEVENLABS_CBT_AGENT_ID: str = os.getenv("ELEVENLABS_CBT_AGENT_ID", "")
+    ELEVENLABS_BEHAVIORAL_AGENT_ID: str = os.getenv("ELEVENLABS_BEHAVIORAL_AGENT_ID", "")
+    ELEVENLABS_COMPASSION_AGENT_ID: str = os.getenv("ELEVENLABS_COMPASSION_AGENT_ID", "")
+    
+    # AI Friend Agents (Separate Account)
+    ELEVENLABS_FRIEND_API_KEY: str = os.getenv("ELEVENLABS_FRIEND_API_KEY", "")
+    ELEVENLABS_FRIEND_SUPPORTIVE_AGENT_ID: str = os.getenv("ELEVENLABS_FRIEND_SUPPORTIVE_AGENT_ID", "")
+    ELEVENLABS_FRIEND_MOTIVATOR_AGENT_ID: str = os.getenv("ELEVENLABS_FRIEND_MOTIVATOR_AGENT_ID", "")
+    ELEVENLABS_FRIEND_MENTOR_AGENT_ID: str = os.getenv("ELEVENLABS_FRIEND_MENTOR_AGENT_ID", "")
+    ELEVENLABS_FRIEND_FUNNY_AGENT_ID: str = os.getenv("ELEVENLABS_FRIEND_FUNNY_AGENT_ID", "")
+    ELEVENLABS_FRIEND_UNHINGED_AGENT_ID: str = os.getenv("ELEVENLABS_FRIEND_UNHINGED_AGENT_ID", "")
+    
+    # Nutrition APIs
+    USDA_API_KEY: str = os.getenv("USDA_API_KEY", "")
+    
+    # Tavus Configuration
+    TAVUS_API_KEY: str = os.getenv("TAVUS_API_KEY", "")
+    TAVUS_MALE_THERAPIST_PERSONA_ID: str = os.getenv("TAVUS_MALE_THERAPIST_PERSONA_ID", "")
+    TAVUS_FEMALE_THERAPIST_PERSONA_ID: str = os.getenv("TAVUS_FEMALE_THERAPIST_PERSONA_ID", "")
+    
+    # Base URL for Gemini service (already configured)
+    BASE_URL: str = os.getenv("BASE_URL", "https://a8d4-49-37-27-19.ngrok-free.app")
+    
+    # Session Durations
+    THERAPY_SESSION_DURATION: int = int(os.getenv("THERAPY_SESSION_DURATION", 2700))  # 45 minutes
+    EXERCISE_SESSION_DURATION: int = int(os.getenv("EXERCISE_SESSION_DURATION", 600))  # 10 minutes
+    
+    # Feature Flags
+    CRISIS_DETECTION_ENABLED: bool = os.getenv("CRISIS_DETECTION_ENABLED", "true").lower() == "true"
+    
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
@@ -39,6 +75,16 @@ class Settings:
     def is_workos_configured(self) -> bool:
         """Check if WorkOS is properly configured"""
         return bool(self.WORKOS_API_KEY and self.WORKOS_CLIENT_ID)
+    
+    @property
+    def is_elevenlabs_configured(self) -> bool:
+        """Check if ElevenLabs is properly configured"""
+        return bool(self.ELEVENLABS_THERAPY_API_KEY or self.ELEVENLABS_EXERCISE_API_KEY)
+    
+    @property
+    def is_tavus_configured(self) -> bool:
+        """Check if Tavus is properly configured"""
+        return bool(self.TAVUS_API_KEY)
     
     def validate_required_settings(self):
         """Validate that required settings are present"""
