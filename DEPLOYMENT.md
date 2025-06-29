@@ -60,9 +60,14 @@ USDA_API_KEY=your_usda_api_key
 
 #### **ElevenLabs (Therapy & Exercise Agents)**
 ```
-ELEVENLABS_API_KEY=your_elevenlabs_api_key
-ELEVENLABS_THERAPY_AGENT_ID=your_therapy_agent_id
-ELEVENLABS_EXERCISE_AGENT_ID=your_exercise_agent_id
+ELEVENLABS_THERAPY_API_KEY=your_therapy_account_api_key
+ELEVENLABS_EXERCISE_API_KEY=your_exercise_account_api_key
+ELEVENLABS_MALE_THERAPIST_AGENT_ID=your_male_therapist_agent_id
+ELEVENLABS_FEMALE_THERAPIST_AGENT_ID=your_female_therapist_agent_id
+ELEVENLABS_MINDFULNESS_AGENT_ID=your_mindfulness_agent_id
+ELEVENLABS_CBT_AGENT_ID=your_cbt_agent_id
+ELEVENLABS_BEHAVIORAL_AGENT_ID=your_behavioral_agent_id
+ELEVENLABS_COMPASSION_AGENT_ID=your_compassion_agent_id
 ```
 
 #### **ElevenLabs (Friend Agents)**

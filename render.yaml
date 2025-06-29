@@ -28,11 +28,21 @@ services:
         sync: false
       - key: USDA_API_KEY
         sync: false
-      - key: ELEVENLABS_API_KEY
+      - key: ELEVENLABS_THERAPY_API_KEY
         sync: false
-      - key: ELEVENLABS_THERAPY_AGENT_ID
+      - key: ELEVENLABS_EXERCISE_API_KEY
         sync: false
-      - key: ELEVENLABS_EXERCISE_AGENT_ID
+      - key: ELEVENLABS_MALE_THERAPIST_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_FEMALE_THERAPIST_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_MINDFULNESS_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_CBT_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_BEHAVIORAL_AGENT_ID
+        sync: false
+      - key: ELEVENLABS_COMPASSION_AGENT_ID
         sync: false
       - key: ELEVENLABS_FRIEND_API_KEY
         sync: false
