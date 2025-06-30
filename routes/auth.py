@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 auth_router = APIRouter(prefix="/auth", tags=["authentication"])
 
 @auth_router.get("/login")
-async def login(state: Optional[str] = None):
+async def login(redirect_uri: Optional[str] = Query(None), state: Optional[str] = None):
     """
     Initiate login via WorkOS AuthKit
     
@@ -24,6 +24,15 @@ async def login(state: Optional[str] = None):
     This is the single unified login endpoint for all authentication methods.
     """
     try:
+        # Store redirect_uri in state if provided
+        if redirect_uri:
+            import json
+            import base64
+            state_data = {"redirect_uri": redirect_uri}
+            if state:
+                state_data["original_state"] = state
+            state = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+        
         # Generate AuthKit URL - this handles ALL auth methods
         auth_url = auth_manager.get_authkit_url(state=state)
         
@@ -43,26 +52,38 @@ async def auth_callback(
     Handle OAuth callback from WorkOS AuthKit
     
     This endpoint processes the authorization code returned by WorkOS
-    and creates a user session.
+    and creates a user session, then redirects to the frontend.
     """
     try:
         # Handle the callback and create session
         session_data = await auth_manager.handle_callback(code=code, state=state)
         
-        # Return session information
-        return {
-            "message": "Authentication successful",
-            "session_id": session_data["session_id"],
-            "user": session_data["user"],
-            "instructions": {
-                "note": "Save the session_id and use it as Bearer token for authenticated requests",
-                "header_format": f"Authorization: Bearer {session_data['session_id']}"
-            }
-        }
+        # Parse redirect_uri from state if provided
+        redirect_uri = "http://localhost:3001/auth/callback"  # Default frontend callback
+        
+        if state:
+            try:
+                import json
+                import base64
+                decoded_state = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+                if "redirect_uri" in decoded_state:
+                    redirect_uri = decoded_state["redirect_uri"]
+            except Exception as e:
+                logger.warning(f"Failed to parse state: {e}")
+        
+        # Log successful authentication
+        logger.info(f"Authentication successful for user: {session_data['user']['email']}")
+        logger.info(f"Session ID: {session_data['session_id']}")
+        logger.info(f"Redirecting to: {redirect_uri}")
+        
+        # Redirect to frontend with success parameter
+        return RedirectResponse(url=f"{redirect_uri}?success=true", status_code=302)
         
     except Exception as e:
         logger.error(f"Callback handling failed: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        # Redirect to frontend with error
+        error_uri = "http://localhost:3001/auth/callback?error=auth_failed"
+        return RedirectResponse(url=error_uri, status_code=302)
 
 @auth_router.get("/profile")
 async def get_profile(current_user: Dict[str, Any] = Depends(get_current_user)):
@@ -122,8 +143,15 @@ async def auth_status(current_user: Optional[Dict[str, Any]] = Depends(get_curre
     if current_user:
         return {
             "authenticated": True,
-            "user_id": current_user["id"],
-            "email": current_user["email"]
+            "user": {
+                "id": current_user["id"],
+                "email": current_user["email"],
+                "firstName": current_user.get("first_name", ""),
+                "lastName": current_user.get("last_name", ""),
+                "profilePicture": current_user.get("profile_picture_url", ""),
+                "joinDate": current_user.get("created_at", ""),
+                "emailVerified": current_user.get("email_verified", False)
+            }
         }
     else:
         return {
