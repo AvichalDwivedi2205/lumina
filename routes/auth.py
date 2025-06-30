@@ -87,7 +87,7 @@ async def logout(
         session_id = auth_header.split(" ")[1]
         
         # Logout user
-        success = auth_manager.logout(session_id)
+        success = await auth_manager.logout(session_id)
         
         if success:
             return {"message": "Logout successful"}
@@ -167,9 +167,20 @@ async def get_auth_config():
 @auth_router.get("/debug/sessions")
 async def debug_sessions():
     """Debug endpoint to show current sessions (development only)"""
-    from auth import sessions
-    return {
-        "active_sessions": len(sessions),
-        "session_ids": list(sessions.keys()),
-        "note": "This endpoint should be removed in production"
-    } 
+    try:
+        from database.supabase_client import supabase_client
+        response = supabase_client.table("user_sessions").select("id, user_id, created_at, expires_at").execute()
+        sessions = response.data if response.data else []
+        
+        return {
+            "active_sessions": len(sessions),
+            "sessions": sessions,
+            "note": "This endpoint should be removed in production"
+        }
+    except Exception as e:
+        return {
+            "active_sessions": 0,
+            "sessions": [],
+            "error": str(e),
+            "note": "This endpoint should be removed in production"
+        } 

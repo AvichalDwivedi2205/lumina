@@ -1,11 +1,14 @@
 import os
 import uuid
 import secrets
+import json
 from typing import Optional, Dict, Any, List
+from datetime import datetime, timedelta
 from workos import WorkOSClient
 from fastapi import HTTPException, Request, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from config import settings
+from database.supabase_client import supabase_client
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,8 +22,81 @@ workos_client = WorkOSClient(
 # Security scheme
 security = HTTPBearer()
 
-# In-memory session store (replace with Redis/database in production)
-sessions: Dict[str, Dict[str, Any]] = {}
+class SessionManager:
+    """Database-backed session management"""
+    
+    async def create_session(self, session_data: Dict[str, Any]) -> str:
+        """Create a new session in database"""
+        try:
+            session_id = str(uuid.uuid4())
+            expires_at = datetime.now() + timedelta(days=7)  # 7 day expiry
+            
+            insert_data = {
+                "id": session_id,
+                "user_id": session_data["user_id"],
+                "session_data": json.dumps(session_data),
+                "expires_at": expires_at.isoformat(),
+                "created_at": datetime.now().isoformat()
+            }
+            
+            # Create sessions table if it doesn't exist
+            await self._ensure_sessions_table()
+            
+            response = supabase_client.table("user_sessions").insert(insert_data).execute()
+            
+            if response.data:
+                logger.info(f"Session created: {session_id}")
+                return session_id
+            else:
+                raise Exception("Failed to create session")
+                
+        except Exception as e:
+            logger.error(f"Session creation failed: {e}")
+            raise HTTPException(status_code=500, detail="Session creation failed")
+    
+    async def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Get session from database"""
+        try:
+            response = supabase_client.table("user_sessions") \
+                .select("*") \
+                .eq("id", session_id) \
+                .gt("expires_at", datetime.now().isoformat()) \
+                .execute()
+            
+            if response.data and len(response.data) > 0:
+                session_record = response.data[0]
+                return json.loads(session_record["session_data"])
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Session retrieval failed: {e}")
+            return None
+    
+    async def delete_session(self, session_id: str) -> bool:
+        """Delete session from database"""
+        try:
+            response = supabase_client.table("user_sessions") \
+                .delete() \
+                .eq("id", session_id) \
+                .execute()
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Session deletion failed: {e}")
+            return False
+    
+    async def _ensure_sessions_table(self):
+        """Ensure sessions table exists"""
+        try:
+            # This will be handled by the database schema
+            pass
+        except Exception as e:
+            logger.error(f"Sessions table creation failed: {e}")
+
+# Global session manager
+session_manager = SessionManager()
 
 class AuthManager:
     """Authentication manager for WorkOS integration"""
@@ -28,46 +104,26 @@ class AuthManager:
     def __init__(self):
         self.client_id = settings.WORKOS_CLIENT_ID
         self.redirect_uri = settings.WORKOS_REDIRECT_URI
-        
-    def get_authorization_url(self, 
-                            provider: Optional[str] = None,
-                            connection_id: Optional[str] = None,
-                            organization_id: Optional[str] = None,
-                            domain_hint: Optional[str] = None,
-                            login_hint: Optional[str] = None,
-                            state: Optional[str] = None) -> str:
+    
+    def get_authorization_url(self, provider: str = "authkit", state: Optional[str] = None) -> str:
         """
-        Generate authorization URL for WorkOS AuthKit
+        Get authorization URL for WorkOS authentication
         
         Args:
-            provider: Should be 'authkit' for unified authentication
-            connection_id: WorkOS connection ID for SSO
-            organization_id: Organization ID for SSO
-            domain_hint: Domain hint for SSO
-            login_hint: Login hint (email) for authentication
-            state: State parameter for CSRF protection
+            provider: Authentication provider (default: "authkit" for AuthKit)
+            state: Optional state parameter for CSRF protection
             
         Returns:
-            Authorization URL for WorkOS AuthKit
+            Authorization URL
         """
-        
-        # Generate state if not provided
         if not state:
             state = secrets.token_urlsafe(32)
         
-        # Build authorization URL using the correct method signature
-        auth_url = workos_client.user_management.get_authorization_url(
+        return workos_client.user_management.get_authorization_url(
             provider=provider,
             redirect_uri=self.redirect_uri,
-            connection_id=connection_id,
-            organization_id=organization_id,
-            domain_hint=domain_hint,
-            login_hint=login_hint,
             state=state
         )
-        
-        logger.info(f"Generated authorization URL for provider: {provider}")
-        return auth_url
     
     def get_authkit_url(self, state: Optional[str] = None) -> str:
         """
@@ -102,10 +158,8 @@ class AuthManager:
             access_token = profile_and_token.access_token
             refresh_token = profile_and_token.refresh_token
             
-            # Create session
-            session_id = str(uuid.uuid4())
+            # Create session data
             session_data = {
-                "session_id": session_id,
                 "user_id": user.id,
                 "user": {
                     "id": user.id,
@@ -122,8 +176,11 @@ class AuthManager:
                 "state": state
             }
             
-            # Store session (in production, use Redis or database)
-            sessions[session_id] = session_data
+            # Store session in database
+            session_id = await session_manager.create_session(session_data)
+            
+            # Add session_id to response
+            session_data["session_id"] = session_id
             
             logger.info(f"Successfully authenticated user: {user.email}")
             return session_data
@@ -144,13 +201,12 @@ class AuthManager:
         """
         session_id = credentials.credentials
         
-        if session_id not in sessions:
+        session_data = await session_manager.get_session(session_id)
+        
+        if not session_data:
             raise HTTPException(status_code=401, detail="Invalid session")
         
-        session_data = sessions[session_id]
-        
-        # Optionally refresh token here if needed
-        # For now, just return the user data
+        # Return the user data
         return session_data["user"]
     
     async def refresh_access_token(self, refresh_token: str) -> Dict[str, Any]:
@@ -177,7 +233,7 @@ class AuthManager:
             logger.error(f"Token refresh failed: {str(e)}")
             raise HTTPException(status_code=401, detail="Token refresh failed")
     
-    def logout(self, session_id: str) -> bool:
+    async def logout(self, session_id: str) -> bool:
         """
         Logout user and remove session
         
@@ -187,11 +243,10 @@ class AuthManager:
         Returns:
             True if logout successful
         """
-        if session_id in sessions:
-            del sessions[session_id]
+        success = await session_manager.delete_session(session_id)
+        if success:
             logger.info(f"User logged out: {session_id}")
-            return True
-        return False
+        return success
     
     def get_logout_url(self, session_id: str) -> str:
         """
@@ -222,8 +277,9 @@ async def get_current_user_optional(request: Request) -> Optional[Dict[str, Any]
     
     try:
         session_id = auth_header.split(" ")[1]
-        if session_id in sessions:
-            return sessions[session_id]["user"]
+        session_data = await session_manager.get_session(session_id)
+        if session_data:
+            return session_data["user"]
     except:
         pass
     
